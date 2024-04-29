@@ -10,7 +10,21 @@ pip install tqdm scikit-learn seaborn numpy pandas icd10-cm
 conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
 conda install conda-forge::transformers
 pip install tensorboard
+conda install lightgbm
+conda install xgboost
 ```
+
+see also:
+
+Operating System: Debian 6.1.0-18-amd64
+Kernel Version: 6.1.76-1 (2024-02-01)
+Architecture: x86_64
+conda 24.3.0
+Python 3.8.19
+pytorch 1.12.1
+torchvision 0.13.1
+torchaudio 0.12.1
+
 
 
 ## Preprocess
@@ -27,10 +41,10 @@ find trials/* -name "NCT*.xml" | sort > trials/all_xml.txt
 ```
 
 ### Generate Target Time
-open preprocess/generate_target.ipynb and run it
+run preprocess/generate_target.ipynb
 
 ### DrugBank
-1. Apply the Drugbank license
+1. Apply the Drugbank license https://go.drugbank.com/releases/latest
 2. Download the data(full database.xml) in data/raw directory.
 3. run preprocess/drugbank_xml2csv.ipynb
 
@@ -53,9 +67,11 @@ python preprocess/data_split.py
 ```
 
 ### Sentence to embedding
+Note that this process is heavy and may take some time to complete. It's recommended to run it in the background.
 ```
 python preprocess/protocol_encode.py
 ```
+
 
 ## Model
 Run model/run_NN.ipynb
