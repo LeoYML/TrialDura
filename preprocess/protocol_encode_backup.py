@@ -93,117 +93,22 @@ def save_sentence2idx(cleaned_sentence_set):
 	with open('data/sentence2id.json', 'w') as json_file:
 		json.dump(sentence2idx, json_file)
 
-# new 
-def save_sentence2embedding(cleaned_sentence_set, batch_size=16):
-    print("save sentence2embedding")
 
-    model_name = "dmis-lab/biobert-base-cased-v1.2"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name)
-    
-    sentence_embeddings = []
-    batch_sentences = []
+def save_sentence2embedding(cleaned_sentence_set):
+	print("save sentence2embedding")
 
-    cleaned_sentence_list = list(cleaned_sentence_set)  # Convert set to list
+	model_name = "dmis-lab/biobert-base-cased-v1.2"
+	tokenizer = AutoTokenizer.from_pretrained(model_name)
+	model = AutoModel.from_pretrained(model_name)
 
-    for i, sentence in enumerate(tqdm(cleaned_sentence_list)):
-        batch_sentences.append(sentence)
-        
-        if len(batch_sentences) == batch_size or i == len(cleaned_sentence_list) - 1:
-            inputs = tokenizer(batch_sentences, return_tensors="pt", padding=True, truncation=True, max_length=512)
+	sentence_emb = [get_sentence_embedding(sentence, tokenizer, model) for sentence in tqdm(cleaned_sentence_set)]
 
-            with torch.no_grad(): 
-                outputs = model(**inputs)
-                
-            cls_embeddings = outputs.last_hidden_state[:, 0, :].squeeze()
-            sentence_embeddings.extend(cls_embeddings.tolist())
-            batch_sentences = []
+	del tokenizer, model
+	print(f"collect garbage: {gc.collect()}")
+	
+	sentence_emb = torch.stack(sentence_emb, dim=0)
 
-    del tokenizer, model
-    print(f"collect garbage: {gc.collect()}")
-
-    sentence_embeddings = torch.tensor(sentence_embeddings)
-
-    torch.save(sentence_embeddings, 'data/sentence_emb.pt')
-    
-#new 2 batching
-def save_sentence2embedding(cleaned_sentence_set, batch_size=16):
-    print("save sentence2embedding")
-
-    model_name = "dmis-lab/biobert-base-cased-v1.2"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name)
-    
-    sentence_embeddings = []
-    batch_sentences = []
-
-    cleaned_sentence_list = list(cleaned_sentence_set)  # Convert set to list
-
-    for i, sentence in enumerate(tqdm(cleaned_sentence_list)):
-        batch_sentences.append(sentence)
-
-        if len(batch_sentences) == batch_size or i == len(cleaned_sentence_list) - 1:
-            inputs = tokenizer(batch_sentences, return_tensors="pt", padding=True, truncation=True, max_length=512)
-
-            with torch.no_grad():
-                outputs = model(**inputs)
-
-            cls_embeddings = outputs.last_hidden_state[:, 0, :]
-
-            # Extend sentence_embeddings with each row (embedding) separately
-            for emb in cls_embeddings:
-                sentence_embeddings.append(emb.tolist())
-
-            batch_sentences = []
-
-    # Convert the list to a torch tensor
-    sentence_embeddings = torch.tensor(sentence_embeddings)
-
-    torch.save(sentence_embeddings, 'data/sentence_emb.pt')
-    
-# new 3 saving
-def save_sentence2embedding(cleaned_sentence_set, batch_size=16, save_interval=100000):
-    print("save sentence2embedding")
-
-    model_name = "dmis-lab/biobert-base-cased-v1.2"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name)
-    
-    sentence_embeddings = []
-    batch_sentences = []
-
-    cleaned_sentence_list = list(cleaned_sentence_set)  
-
-    for i, sentence in enumerate(tqdm(cleaned_sentence_list)):
-        batch_sentences.append(sentence)
-
-        if len(batch_sentences) == batch_size or i == len(cleaned_sentence_list) - 1:
-            inputs = tokenizer(batch_sentences, return_tensors="pt", padding=True, truncation=True, max_length=512)
-
-            with torch.no_grad():
-                outputs = model(**inputs)
-
-            cls_embeddings = outputs.last_hidden_state[:, 0, :]
-
-            for emb in cls_embeddings:
-                sentence_embeddings.append(emb.tolist())
-
-            batch_sentences = []
-
-        if i % save_interval == 0 and i > 0:
-
-            sentence_embeddings = torch.tensor(sentence_embeddings)
-            torch.save(sentence_embeddings, f'data/sentence_emb_{i}.pt')
-            sentence_embeddings = []
-
-    if len(sentence_embeddings) > 0:
-        sentence_embeddings = torch.tensor(sentence_embeddings)
-        torch.save(sentence_embeddings, f'data/sentence_emb_{len(cleaned_sentence_list)}.pt')
-
-    del model, tokenizer
-    gc.collect()
-
-
+	torch.save(sentence_emb, 'data/sentence_emb.pt')
 
 
 def save_sentence_bert_dict_pkl():
