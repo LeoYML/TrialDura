@@ -227,46 +227,7 @@ def get_sentence_emb_by_idx(idx, size=4280765, interval=800000):
     
     return embedding
 
-class EmbeddingReader:
-    def __init__(self, size=4280765, interval=800000, max_cache_size=3):
-        self.size = size
-        self.interval = interval
-        self.max_cache_size = max_cache_size
-        self.cache = {}
-        self.cache_order = []
 
-    def get_file_name(self, file_idx):
-        return f"data/sentence_emb_{file_idx}.pt"
-
-    def load_file(self, file_idx):
-        filename = self.get_file_name(file_idx)
-        if os.path.exists(filename):
-            return torch.load(filename)
-        else:
-            print(f"File not found: {filename}")
-            return None
-
-    def get_embedding(self, idx):
-        if idx >= self.size:
-            print(f"Embedding index out of range: {self.size}, total size: 4280765")
-            return None
-        
-        file_idx = (idx // self.interval + 1) * self.interval
-        sub_idx = idx % self.interval
-        
-        if file_idx not in self.cache:
-            if len(self.cache) >= self.max_cache_size:
-                oldest_file_idx = self.cache_order.pop(0)
-                del self.cache[oldest_file_idx]
-            
-            embeddings = self.load_file(file_idx)
-            if embeddings is not None:
-                self.cache[file_idx] = embeddings
-                self.cache_order.append(file_idx)
-            else:
-                return None
-        
-        return self.cache[file_idx][sub_idx].tolist()
     
 class EmbeddingReader:
 	def __init__(self, size=4280765, interval=800000, max_cache_size=3):
