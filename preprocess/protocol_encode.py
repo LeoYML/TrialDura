@@ -20,6 +20,7 @@ from transformers import AutoTokenizer, AutoModel
 import json
 import multiprocessing as mp
 import gc
+import os
 
 import numpy as np
 
@@ -226,11 +227,125 @@ def get_sentence_emb_by_idx(idx, size=4280765, interval=800000):
     
     return embedding
 
+class EmbeddingReader:
+    def __init__(self, size=4280765, interval=800000, max_cache_size=3):
+        self.size = size
+        self.interval = interval
+        self.max_cache_size = max_cache_size
+        self.cache = {}
+        self.cache_order = []
+
+    def get_file_name(self, file_idx):
+        return f"data/sentence_emb_{file_idx}.pt"
+
+    def load_file(self, file_idx):
+        filename = self.get_file_name(file_idx)
+        if os.path.exists(filename):
+            return torch.load(filename)
+        else:
+            print(f"File not found: {filename}")
+            return None
+
+    def get_embedding(self, idx):
+        if idx >= self.size:
+            print(f"Embedding index out of range: {self.size}, total size: 4280765")
+            return None
+        
+        file_idx = (idx // self.interval + 1) * self.interval
+        sub_idx = idx % self.interval
+        
+        if file_idx not in self.cache:
+            if len(self.cache) >= self.max_cache_size:
+                oldest_file_idx = self.cache_order.pop(0)
+                del self.cache[oldest_file_idx]
+            
+            embeddings = self.load_file(file_idx)
+            if embeddings is not None:
+                self.cache[file_idx] = embeddings
+                self.cache_order.append(file_idx)
+            else:
+                return None
+        
+        return self.cache[file_idx][sub_idx].tolist()
+    
+class EmbeddingReader:
+	def __init__(self, size=4280765, interval=800000, max_cache_size=3):
+		self.size = size
+		self.interval = interval
+		self.max_cache_size = max_cache_size
+		self.cache = {}
+		self.cache_order = []
+
+	def get_file_name(self, file_idx):
+		return f"data/sentence_emb_{file_idx}.pt"
+
+	def load_file(self, file_idx):
+		filename = self.get_file_name(file_idx)
+		if os.path.exists(filename):
+			return torch.load(filename)
+		else:
+			print(f"Invalid file: {filename}")
+			return None
+
+	def get_embedding(self, idx):
+     
+		if idx >= self.size:
+			print(f"Embedding index out of range: {self.size}, total size: 4280765")
+			return None
+		
+		file_idx = (idx // self.interval + 1) * self.interval
+		sub_idx = idx % self.interval
+		
+		if file_idx not in self.cache:
+			if len(self.cache) >= self.max_cache_size:
+				oldest_file_idx = self.cache_order.pop(0)
+				del self.cache[oldest_file_idx]
+			
+			embeddings = self.load_file(file_idx)
+			if embeddings is not None:
+				self.cache[file_idx] = embeddings
+				self.cache_order.append(file_idx)
+			else:
+				return None
+		
+		return self.cache[file_idx][sub_idx]
+	
+	def read_file(self, chunk):
+		"""
+			1: idx 0~799999
+			2: idx 800000~1599999
+			...
+			6: idx 3999999~4280764
+		"""
+		if chunk < 1 or chunk > 6:
+			print("Parameter out of range: must be between 1 and 6")
+			return None
+		
+		file_idx = chunk * self.interval
+		embeddings = self.load_file(file_idx)
+		if embeddings is not None:
+			return embeddings
+		else:
+			print(f"Failed to load chunk {chunk}")
+			return None
+
 if __name__ == "__main__":
 	# protocols = get_all_protocols()
 	# split_protocols(protocols)
+	
 	save_sentence_bert_dict_pkl() 
- 
+
+	# examples for read embedding, embedding_1 and embedding_2 should be the same idx
+	embedding_reader = EmbeddingReader()
+	embedding_1 = embedding_reader.get_embedding(876543)  
+	print(embedding_1[0:10])
+
+
+
+	embeddings = embedding_reader.read_file(2) 
+	embedding_2 = embeddings[76543]
+	print(embedding_2[0:10])
+	
 
 
 
