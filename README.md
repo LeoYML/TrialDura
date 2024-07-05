@@ -1,5 +1,5 @@
 # TrialDura
-Code for the Paper: TrialDura: Hierarchical Attention Transformer for Interpretable Clinical Trial Duration Prediction
+Code for the Paper: [TrialDura: Hierarchical Attention Transformer for Interpretable Clinical Trial Duration Prediction](https://arxiv.org/pdf/2404.13235)
 
 ## Installation
 ```
