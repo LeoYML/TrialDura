@@ -36,6 +36,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 import os
 os.getcwd()
 
+# os.environ["OMP_NUM_THREADS"] = "8"
+# os.environ["MKL_NUM_THREADS"] = "8"
+# torch.set_num_threads(8)
+# Setting thread usage limit
+# currently 8 (32 max)
+
 use_valid = True
 
 # %%
@@ -45,9 +51,22 @@ sentence2vec = load_sentence_2_vec("../data")
 train_data = pd.read_csv(f'../data/time_prediction_train.csv', sep='\t')
 test_data = pd.read_csv(f'../data/time_prediction_test.csv', sep='\t')
 
+print("Train :", len(train_data))
+print("Test  :", len(test_data))
+
 if use_valid:
     train_data, valid_data = train_test_split(train_data, test_size=0.2, random_state=0)
+
 print(train_data.head())
+print("Train data heading printed\n")
+
+print(valid_data.head())
+print("Valid data heading printed\n")
+
+print("Train split size: ", len(train_data))
+print("Valid split size: ", len(valid_data))
+
+# exit()
 
 # %%
 # Missing Value Handling

@@ -87,15 +87,15 @@ def get_sentence_embedding(sentence, tokenizer, model):
     return cls_embedding
 
 def save_sentence2idx(cleaned_sentence_set):
-	print("save sentence2idx")
+	print("save sentence2idx_back")
 	sentence2idx = {sentence: index for index, sentence in enumerate(cleaned_sentence_set)}
 
-	with open('data/sentence2id.json', 'w') as json_file:
+	with open('data/sentence2id_back.json', 'w') as json_file:
 		json.dump(sentence2idx, json_file)
 
 
 def save_sentence2embedding(cleaned_sentence_set):
-	print("save sentence2embedding")
+	print("save sentence2embedding_back")
 
 	model_name = "dmis-lab/biobert-base-cased-v1.2"
 	tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -108,7 +108,7 @@ def save_sentence2embedding(cleaned_sentence_set):
 	
 	sentence_emb = torch.stack(sentence_emb, dim=0)
 
-	torch.save(sentence_emb, 'data/sentence_emb.pt')
+	torch.save(sentence_emb, 'data/sentence_emb_back.pt')
 
 
 def save_sentence_bert_dict_pkl():
@@ -122,8 +122,8 @@ def save_sentence_bert_dict_pkl():
 def load_sentence_2_vec(data_path="data"):
 	# sentence_2_vec = pickle.load(open('data/sentence2embedding.pkl', 'rb'))
 
-	sentence_emb = torch.load(f"{data_path}/sentence_emb.pt")
-	data = json.load(open(f"{data_path}/sentence2id.json", "r"))
+	sentence_emb = torch.load(f"{data_path}/sentence_emb_back.pt")
+	data = json.load(open(f"{data_path}/sentence2id_back.json", "r"))
 
 	sentence_2_vec = {sentence: sentence_emb[idx] for sentence, idx in data.items()}
 

@@ -22,13 +22,21 @@ import multiprocessing as mp
 import gc
 import os
 
+# os.environ["OMP_NUM_THREADS"] = "12"
+# os.environ["MKL_NUM_THREADS"] = "12"
+# torch.set_num_threads(12)
+# Setting thread usage limit
+# currently 12 (32 max)
+
 import numpy as np
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def clean_protocol(protocol):
 	protocol = protocol.lower()
-	protocol_split = protocol.split('\n')
+	# protocol_split = protocol.split('\n')
+	# previous splitting method, renewed since the data was seperated differently.
+	protocol_split = protocol.split('\r\n\r\n')
 	filter_out_empty_fn = lambda x: len(x.strip())>0
 	strip_fn = lambda x:x.strip()
 	protocol_split = list(filter(filter_out_empty_fn, protocol_split))	
@@ -99,7 +107,7 @@ def save_sentence2idx(cleaned_sentence_set):
 		json.dump(sentence2idx, json_file)
 
 
-def save_sentence2embedding(cleaned_sentence_set, batch_size=64, save_interval=800000):
+def save_sentence2embedding(cleaned_sentence_set, batch_size=64, save_interval=800000, save_as_interval=False):
 	print("save sentence2embedding")
 
 	model_name = "dmis-lab/biobert-base-cased-v1.2"
@@ -109,39 +117,66 @@ def save_sentence2embedding(cleaned_sentence_set, batch_size=64, save_interval=8
 	sentence_embeddings = []
 	batch_sentences = []
 
-	cleaned_sentence_list = list(cleaned_sentence_set) 
+	cleaned_sentence_list = list(cleaned_sentence_set)
+	embedding_length = len(cleaned_sentence_list)
 
 	ctr = 1
 
-	for i, sentence in enumerate(tqdm(cleaned_sentence_list)):
-		batch_sentences.append(sentence)
+	if save_as_interval:
+		for i, sentence in enumerate(tqdm(cleaned_sentence_list)):
+			batch_sentences.append(sentence)
 
-		if len(batch_sentences) == batch_size or i == len(cleaned_sentence_list) - 1:
-			inputs = tokenizer(batch_sentences, return_tensors="pt", padding=True, truncation=True, max_length=512)
+			if len(batch_sentences) == batch_size or i == len(cleaned_sentence_list) - 1:
+				inputs = tokenizer(batch_sentences, return_tensors="pt", padding=True, truncation=True, max_length=512)
 
-			with torch.no_grad():
-				outputs = model(**inputs)
+				with torch.no_grad():
+					outputs = model(**inputs)
 
-			cls_embeddings = outputs.last_hidden_state[:, 0, :]
+				cls_embeddings = outputs.last_hidden_state[:, 0, :]
 
-			for emb in cls_embeddings:
-				sentence_embeddings.append(emb.tolist())
+				for emb in cls_embeddings:
+					sentence_embeddings.append(emb.tolist())
 
-			batch_sentences = []
+				batch_sentences = []
 
-		if (i + 1) % save_interval == 0 or i == len(cleaned_sentence_list) - 1:
-			
+			if (i + 1) % save_interval == 0 or i == len(cleaned_sentence_list) - 1:
+				
+				sentence_embeddings_tensor = torch.tensor(sentence_embeddings)
+				save_path = f"data/sentence_emb_{ctr*save_interval}.pt"
+	
+				torch.save(sentence_embeddings_tensor, save_path)
+				sentence_embeddings = []
+				ctr += 1
+
+		if len(sentence_embeddings) > 0:
 			sentence_embeddings_tensor = torch.tensor(sentence_embeddings)
-			save_path = f"data/sentence_emb_{ctr*save_interval}.pt"
-   
+			save_path = f"data/sentence_emb_{embedding_length}.pt"
 			torch.save(sentence_embeddings_tensor, save_path)
-			sentence_embeddings = []
-			ctr += 1
 
-	if len(sentence_embeddings) > 0:
-		sentence_embeddings_tensor = torch.tensor(sentence_embeddings)
-		save_path = f"data/sentence_emb_{ctr*save_interval}.pt"
-		torch.save(sentence_embeddings_tensor, save_path)
+			print("Save finished")
+	else:
+		for i, sentence in enumerate(tqdm(cleaned_sentence_list)):
+			batch_sentences.append(sentence)
+
+			if len(batch_sentences) == batch_size or i == len(cleaned_sentence_list) - 1:
+				inputs = tokenizer(batch_sentences, return_tensors="pt", padding=True, truncation=True, max_length=512)
+
+				with torch.no_grad():
+					outputs = model(**inputs)
+
+				cls_embeddings = outputs.last_hidden_state[:, 0, :]
+
+				for emb in cls_embeddings:
+					sentence_embeddings.append(emb.tolist())
+
+				batch_sentences = []
+
+		if len(sentence_embeddings) > 0:
+			sentence_embeddings_tensor = torch.tensor(sentence_embeddings)
+			save_path = "data/sentence_emb.pt"
+			torch.save(sentence_embeddings_tensor, save_path)
+
+			print("Save Done.")
 
 	model = None 
 	gc.collect() 
@@ -149,7 +184,7 @@ def save_sentence2embedding(cleaned_sentence_set, batch_size=64, save_interval=8
 
 def save_sentence_bert_dict_pkl():
 	print("collect cleaned sentence set")
-	cleaned_sentence_set = collect_cleaned_sentence_set() 
+	cleaned_sentence_set = collect_cleaned_sentence_set()
 	
 	save_sentence2idx(cleaned_sentence_set)
 	save_sentence2embedding(cleaned_sentence_set)
