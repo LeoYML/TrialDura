@@ -3,7 +3,8 @@ input:
 	data/raw_data.csv
 
 output:
-	data/sentence2embedding.pkl (preprocessing)
+	data/sentence_emb.pt
+	data/sentence2id.json
 	protocol_embedding 
 '''
 
@@ -72,7 +73,10 @@ def split_protocol(protocol):
 		return protocol_split, 
 
 def collect_cleaned_sentence_set():
-	protocol_lst = get_all_protocols() 
+	protocol_lst = get_all_protocols()
+
+	print (f"protocol_lst # from raw_data.csv: {len(protocol_lst)}")
+
 	cleaned_sentence_lst = []
 	for protocol in protocol_lst:
 		result = split_protocol(protocol)
@@ -145,6 +149,9 @@ def save_sentence2embedding(cleaned_sentence_set, batch_size=64, save_interval=8
 				save_path = f"data/sentence_emb_{ctr*save_interval}.pt"
 	
 				torch.save(sentence_embeddings_tensor, save_path)
+
+				print(f"Saved Interval {ctr}(~{ctr*save_interval})")
+
 				sentence_embeddings = []
 				ctr += 1
 
@@ -153,7 +160,7 @@ def save_sentence2embedding(cleaned_sentence_set, batch_size=64, save_interval=8
 			save_path = f"data/sentence_emb_{embedding_length}.pt"
 			torch.save(sentence_embeddings_tensor, save_path)
 
-			print("Save finished")
+			print(f"Saved Interval {ctr}(~{embedding_length})")
 	else:
 		for i, sentence in enumerate(tqdm(cleaned_sentence_list)):
 			batch_sentences.append(sentence)
@@ -176,7 +183,7 @@ def save_sentence2embedding(cleaned_sentence_set, batch_size=64, save_interval=8
 			save_path = "data/sentence_emb.pt"
 			torch.save(sentence_embeddings_tensor, save_path)
 
-			print("Save Done.")
+			print(f"Saved {embedding_length} Done.")
 
 	model = None 
 	gc.collect() 
@@ -185,8 +192,11 @@ def save_sentence2embedding(cleaned_sentence_set, batch_size=64, save_interval=8
 def save_sentence_bert_dict_pkl():
 	print("collect cleaned sentence set")
 	cleaned_sentence_set = collect_cleaned_sentence_set()
+
+	print (f"Collected cleaned sentence list #: {len(cleaned_sentence_set)}")
 	
 	save_sentence2idx(cleaned_sentence_set)
+
 	save_sentence2embedding(cleaned_sentence_set)
 
 
