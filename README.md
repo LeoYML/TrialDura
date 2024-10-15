@@ -2,11 +2,15 @@
 
 [![arXiv](https://img.shields.io/badge/arXiv-2404.13235-b31b1b.svg)](https://arxiv.org/abs/2404.13235)
 
+Congratulations! This paper has been accepted at the 2024 NeurIPS workshop!
+
 ## Overview
 
 TrialDura is a hierarchical attention transformer model designed for interpretable clinical trial duration prediction. This repository contains the code and instructions to reproduce the results presented in our paper.
 
 ![Overview](overview.png)
+
+
 
 ## Installation
 
